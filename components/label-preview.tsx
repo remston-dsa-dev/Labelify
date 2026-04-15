@@ -36,7 +36,7 @@ export function LabelPreview({ sku, className }: Props) {
   if (!sku) {
     return (
       <div
-        className={`flex items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white/80 p-8 text-center text-sm text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900/80 dark:text-zinc-400 ${className ?? ""}`}
+        className={`flex items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 p-8 text-center text-sm text-muted-foreground ${className ?? ""}`}
       >
         Select or create a SKU to preview the label.
       </div>
@@ -49,7 +49,7 @@ export function LabelPreview({ sku, className }: Props) {
 
   return (
     <div
-      className={`label-print-area flex flex-col items-center rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 ${className ?? ""}`}
+      className={`label-print-area flex flex-col items-center rounded-xl border border-border bg-white p-6 text-zinc-950 shadow-sm ring-1 ring-black/5 dark:ring-white/10 ${className ?? ""}`}
     >
       <div className="flex w-full max-w-[320px] flex-col items-center gap-3 text-center">
         {sku.logo_url ? (
@@ -63,20 +63,20 @@ export function LabelPreview({ sku, className }: Props) {
             />
           </div>
         ) : (
-          <div className="flex h-12 w-full max-w-[200px] items-center justify-center rounded border border-dashed border-zinc-200 text-xs text-zinc-400 dark:border-zinc-600">
+          <div className="flex h-12 w-full max-w-[200px] items-center justify-center rounded border border-dashed border-zinc-300 text-xs text-zinc-500">
             Logo (optional)
           </div>
         )}
-        <h2 className="text-balance text-lg font-semibold leading-snug text-zinc-900 dark:text-zinc-50">
+        <h2 className="text-balance text-lg font-semibold leading-snug text-zinc-900">
           {sku.name}
         </h2>
         {trace ? (
-          <p className="text-xs text-zinc-600 dark:text-zinc-400">{trace}</p>
+          <p className="text-xs text-zinc-600">{trace}</p>
         ) : null}
-        <div className="w-full overflow-hidden rounded-md bg-white py-1 dark:bg-zinc-900">
+        <div className="w-full overflow-hidden rounded-md bg-white py-1">
           <svg ref={svgRef} className="mx-auto block h-auto w-full max-w-[280px]" />
         </div>
-        <p className="text-xl font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
+        <p className="text-xl font-semibold tabular-nums text-zinc-900">
           {formatUsd(sku.price_cents)}
         </p>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
+import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -78,11 +79,16 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center px-4">
+    <div className="relative flex min-h-dvh flex-col items-center justify-center bg-background px-4 text-foreground">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Labelify</h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            Labelify
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             Barcode labels for your business
           </p>
         </div>
@@ -91,7 +97,7 @@ function LoginForm() {
           type="button"
           onClick={handleGoogle}
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white py-2.5 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card py-2.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted disabled:opacity-60"
         >
           <GoogleIcon />
           Continue with Google
@@ -99,10 +105,10 @@ function LoginForm() {
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-zinc-200 dark:border-zinc-700" />
+            <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
+            <span className="bg-background px-2 text-muted-foreground">
               Or continue with email
             </span>
           </div>
@@ -112,7 +118,7 @@ function LoginForm() {
           <div>
             <label
               htmlFor="email"
-              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              className="mb-1 block text-sm font-medium text-foreground"
             >
               Email
             </label>
@@ -124,13 +130,13 @@ function LoginForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-2 ring-transparent focus:ring-foreground/20"
             />
           </div>
           <div>
             <label
               htmlFor="password"
-              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              className="mb-1 block text-sm font-medium text-foreground"
             >
               Password
             </label>
@@ -145,7 +151,7 @@ function LoginForm() {
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none ring-zinc-400 focus:ring-2 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-2 ring-transparent focus:ring-foreground/20"
             />
           </div>
           {error ? (
@@ -156,7 +162,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+            className="w-full rounded-lg bg-foreground py-2.5 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-60"
           >
             {loading
               ? "Please wait…"
@@ -165,13 +171,13 @@ function LoginForm() {
                 : "Create account"}
           </button>
         </form>
-        <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-center text-sm text-muted-foreground">
           {mode === "signin" ? (
             <>
               No account?{" "}
               <button
                 type="button"
-                className="font-medium text-zinc-900 underline dark:text-zinc-100"
+                className="font-medium text-foreground underline"
                 onClick={() => {
                   setMode("signup");
                   setError(null);
@@ -185,7 +191,7 @@ function LoginForm() {
               Already have an account?{" "}
               <button
                 type="button"
-                className="font-medium text-zinc-900 underline dark:text-zinc-100"
+                className="font-medium text-foreground underline"
                 onClick={() => {
                   setMode("signin");
                   setError(null);
@@ -196,7 +202,7 @@ function LoginForm() {
             </>
           )}
         </p>
-        <p className="text-center text-xs text-zinc-500">
+        <p className="text-center text-xs text-muted-foreground">
           <Link href="/" className="underline">
             Home
           </Link>
@@ -210,7 +216,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center text-sm text-zinc-500">
+        <div className="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">
           Loading…
         </div>
       }

@@ -98,7 +98,7 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
         <div className="min-w-0 flex-1">
           <label
             htmlFor="gtin"
-            className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+            className="mb-1 block text-xs font-medium text-muted-foreground"
           >
             EAN-13 (GTIN)
           </label>
@@ -110,7 +110,7 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
             maxLength={13}
             value={gtin}
             onChange={(e) => setGtin(e.target.value.replace(/\D/g, "").slice(0, 13))}
-            className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 font-mono text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+            className="w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-sm text-foreground"
             placeholder="13 digits"
             required
           />
@@ -119,19 +119,19 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
           type="button"
           onClick={handleGenerateGtin}
           disabled={pending}
-          className="shrink-0 rounded-md border border-zinc-300 bg-zinc-100 px-2 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+          className="shrink-0 rounded-md border border-border bg-muted px-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80 disabled:opacity-50"
         >
           Generate
         </button>
       </div>
-      <p className="text-xs text-zinc-500 dark:text-zinc-400">
+      <p className="text-xs text-muted-foreground">
         Retail packaging often needs a GS1-registered prefix. Generated codes are
         valid EAN-13 for internal use.
       </p>
       <div>
         <label
           htmlFor="name"
-          className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+          className="mb-1 block text-xs font-medium text-muted-foreground"
         >
           Product name
         </label>
@@ -140,14 +140,14 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
           name="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
           required
         />
       </div>
       <div>
         <label
           htmlFor="lot"
-          className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+          className="mb-1 block text-xs font-medium text-muted-foreground"
         >
           Lot (optional)
         </label>
@@ -156,13 +156,13 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
           name="lot"
           value={lot}
           onChange={(e) => setLot(e.target.value)}
-          className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
         />
       </div>
       <div>
         <label
           htmlFor="price"
-          className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+          className="mb-1 block text-xs font-medium text-muted-foreground"
         >
           Price (USD)
         </label>
@@ -172,13 +172,13 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
           inputMode="decimal"
           value={priceInput}
           onChange={(e) => setPriceInput(e.target.value)}
-          className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
         />
       </div>
       <div>
         <label
           htmlFor="logo_url"
-          className="mb-1 block text-xs font-medium text-zinc-600 dark:text-zinc-400"
+          className="mb-1 block text-xs font-medium text-muted-foreground"
         >
           Logo URL (optional)
         </label>
@@ -188,7 +188,7 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
           type="url"
           value={logoUrl}
           onChange={(e) => setLogoUrl(e.target.value)}
-          className="w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm text-zinc-900 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100"
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
           placeholder="https://…"
         />
       </div>
@@ -201,7 +201,7 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+          className="rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50"
         >
           {selected ? "Save changes" : "Add SKU"}
         </button>
@@ -210,7 +210,7 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
             type="button"
             onClick={handleDelete}
             disabled={pending}
-            className="rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:bg-zinc-900 dark:text-red-400 dark:hover:bg-red-950/40"
+            className="rounded-md border border-red-300/80 bg-background px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/50"
           >
             Delete
           </button>

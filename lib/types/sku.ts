@@ -1,6 +1,8 @@
 export type SkuRow = {
   id: string;
   user_id: string;
+  /** Symbology id (see `lib/barcode-formats.ts`). Missing before migration → treat as `ean13`. */
+  barcode_format?: string;
   gtin: string;
   name: string;
   lot: string | null;

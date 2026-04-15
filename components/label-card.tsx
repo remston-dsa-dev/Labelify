@@ -1,40 +1,65 @@
 "use client";
 
+import {
+  DEFAULT_BARCODE_FORMAT_ID,
+  getBarcodeFormatDef,
+} from "@/lib/barcode-formats";
 import { formatUsd } from "@/lib/money";
 import type { SkuRow } from "@/lib/types/sku";
-import JsBarcode from "jsbarcode";
-import { useEffect, useRef } from "react";
+import bwipjs from "bwip-js/browser";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   sku: SkuRow;
   className?: string;
 };
 
-/** Single label tile (EAN-13 + product fields). Used in preview and batch print. */
+/** Single label tile: product fields + barcode image (bwip-js / BWIPP). */
 export function LabelCard({ sku, className }: Props) {
-  const svgRef = useRef<SVGSVGElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [encodeErr, setEncodeErr] = useState<string | null>(null);
+
+  const fmtId = sku.barcode_format ?? DEFAULT_BARCODE_FORMAT_ID;
 
   useEffect(() => {
-    const el = svgRef.current;
-    if (!el || !sku.gtin) return;
+    const canvas = canvasRef.current;
+    const def =
+      getBarcodeFormatDef(fmtId) ??
+      getBarcodeFormatDef(DEFAULT_BARCODE_FORMAT_ID)!;
+    if (!canvas || !sku.gtin) return;
     try {
-      el.innerHTML = "";
-      JsBarcode(el, sku.gtin, {
-        format: "EAN13",
-        width: 1.8,
-        height: 56,
-        displayValue: true,
-        fontSize: 14,
-        margin: 8,
-        background: "transparent",
-        lineColor: "#0a0a0a",
+      const is2d = def.family === "2d";
+      bwipjs.toCanvas(canvas, {
+        bcid: def.bcid,
+        text: sku.gtin,
+        scale: is2d ? 2 : 2,
+        height: is2d ? undefined : 12,
+        includetext: true,
+        textsize: is2d ? 7 : 10,
+        textxalign: "center",
+        backgroundcolor: "ffffff",
+        barcolor: "000000",
+        textcolor: "000000",
       });
-    } catch {
-      el.innerHTML = "";
+      queueMicrotask(() => setEncodeErr(null));
+    } catch (e) {
+      // Sync feedback after bwip-js encode (external canvas API)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- encode error display
+      setEncodeErr(e instanceof Error ? e.message : "Could not encode barcode.");
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
-  }, [sku.gtin]);
+  }, [sku.gtin, fmtId]);
 
-  const trace = [sku.gtin ? `GTIN: ${sku.gtin}` : null, sku.lot ? `Lot: ${sku.lot}` : null]
+  const label =
+    getBarcodeFormatDef(fmtId)?.label ?? sku.barcode_format ?? "Barcode";
+
+  const trace = [
+    sku.gtin ? `Format: ${label}` : null,
+    sku.lot ? `Lot: ${sku.lot}` : null,
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -61,11 +86,17 @@ export function LabelCard({ sku, className }: Props) {
         <h2 className="text-balance text-lg font-semibold leading-snug text-zinc-900">
           {sku.name}
         </h2>
-        {trace ? (
-          <p className="text-xs text-zinc-600">{trace}</p>
-        ) : null}
+        {trace ? <p className="text-xs text-zinc-600">{trace}</p> : null}
         <div className="w-full overflow-hidden rounded-md bg-white py-1">
-          <svg ref={svgRef} className="mx-auto block h-auto w-full max-w-[280px]" />
+          {encodeErr ? (
+            <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+              {encodeErr}
+            </p>
+          ) : null}
+          <canvas
+            ref={canvasRef}
+            className="mx-auto max-h-[min(360px,50vh)] w-full max-w-[280px]"
+          />
         </div>
         <p className="text-xl font-semibold tabular-nums text-zinc-900">
           {formatUsd(sku.price_cents)}

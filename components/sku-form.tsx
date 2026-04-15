@@ -6,6 +6,12 @@ import {
   generateNextGtin,
   updateSku,
 } from "@/app/actions/skus";
+import {
+  BARCODE_FORMAT_GROUPS,
+  DEFAULT_BARCODE_FORMAT_ID,
+  getBarcodeFormatDef,
+} from "@/lib/barcode-formats";
+import { formatValidationHint } from "@/lib/barcode-validate";
 import { centsToInputString, parsePriceToCents } from "@/lib/money";
 import type { SkuRow } from "@/lib/types/sku";
 import { useRouter } from "next/navigation";
@@ -16,10 +22,17 @@ type Props = {
   onCreatedSelect: (id: string) => void;
 };
 
+function digitsOnly(v: string, max: number) {
+  return v.replace(/\D/g, "").slice(0, max);
+}
+
 export function SkuForm({ selected, onCreatedSelect }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [barcodeFormat, setBarcodeFormat] = useState(
+    () => selected?.barcode_format ?? DEFAULT_BARCODE_FORMAT_ID,
+  );
   const [gtin, setGtin] = useState(() => selected?.gtin ?? "");
   const [name, setName] = useState(() => selected?.name ?? "");
   const [lot, setLot] = useState(() => selected?.lot ?? "");
@@ -30,6 +43,7 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
 
   function buildFormData(): FormData {
     const fd = new FormData();
+    fd.set("barcode_format", barcodeFormat);
     fd.set("gtin", gtin);
     fd.set("name", name);
     fd.set("lot", lot);
@@ -40,6 +54,27 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
     fd.set("price_cents", String(cents));
     fd.set("logo_url", logoUrl);
     return fd;
+  }
+
+  function onPayloadChange(v: string) {
+    if (
+      barcodeFormat === "ean13" ||
+      barcodeFormat === "ean8" ||
+      barcodeFormat === "upca" ||
+      barcodeFormat === "interleaved2of5"
+    ) {
+      const max =
+        barcodeFormat === "ean13"
+          ? 13
+          : barcodeFormat === "ean8"
+            ? 8
+            : barcodeFormat === "upca"
+              ? 12
+              : 4096;
+      setGtin(digitsOnly(v, max));
+      return;
+    }
+    setGtin(v.slice(0, 4096));
   }
 
   function handleGenerateGtin() {
@@ -92,41 +127,108 @@ export function SkuForm({ selected, onCreatedSelect }: Props) {
     });
   }
 
+  const hint = formatValidationHint(barcodeFormat);
+  const def = getBarcodeFormatDef(barcodeFormat);
+  const showGenerate = barcodeFormat === "ean13";
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <div>
+        <label
+          htmlFor="barcode_format"
+          className="mb-1 block text-xs font-medium text-muted-foreground"
+        >
+          Barcode type
+        </label>
+        <select
+          id="barcode_format"
+          name="barcode_format"
+          value={barcodeFormat}
+          onChange={(e) => {
+            setBarcodeFormat(e.target.value);
+            setGtin("");
+          }}
+          className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm text-foreground"
+        >
+          {BARCODE_FORMAT_GROUPS.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.ids.map((id) => {
+                const d = getBarcodeFormatDef(id);
+                if (!d) return null;
+                return (
+                  <option key={id} value={id}>
+                    {d.label}
+                  </option>
+                );
+              })}
+            </optgroup>
+          ))}
+        </select>
+        {def ? (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            {def.family === "2d"
+              ? "2D — scan with a camera-based scanner."
+              : "1D — works with many laser scanners."}{" "}
+            {hint ? `· ${hint}` : null}
+          </p>
+        ) : null}
+      </div>
+
       <div className="flex flex-wrap items-end gap-2">
         <div className="min-w-0 flex-1">
           <label
             htmlFor="gtin"
             className="mb-1 block text-xs font-medium text-muted-foreground"
           >
-            EAN-13 (GTIN)
+            Barcode data
           </label>
-          <input
-            id="gtin"
-            name="gtin"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={13}
-            value={gtin}
-            onChange={(e) => setGtin(e.target.value.replace(/\D/g, "").slice(0, 13))}
-            className="w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-sm text-foreground"
-            placeholder="13 digits"
-            required
-          />
+          {barcodeFormat === "qrcode" ||
+          barcodeFormat === "gs1qrcode" ||
+          barcodeFormat === "swissqrcode" ||
+          barcodeFormat === "datamatrix" ||
+          barcodeFormat === "gs1datamatrix" ? (
+            <textarea
+              id="gtin"
+              name="gtin"
+              required
+              rows={3}
+              value={gtin}
+              onChange={(e) => onPayloadChange(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-sm text-foreground"
+              placeholder={
+                barcodeFormat === "swissqrcode"
+                  ? "Swiss QR invoice payload…"
+                  : "Text or structured payload…"
+              }
+            />
+          ) : (
+            <input
+              id="gtin"
+              name="gtin"
+              type="text"
+              autoComplete="off"
+              required
+              value={gtin}
+              onChange={(e) => onPayloadChange(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-2 py-1.5 font-mono text-sm text-foreground"
+              placeholder={def?.label ?? "Payload"}
+            />
+          )}
         </div>
-        <button
-          type="button"
-          onClick={handleGenerateGtin}
-          disabled={pending}
-          className="shrink-0 rounded-md border border-border bg-muted px-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80 disabled:opacity-50"
-        >
-          Generate
-        </button>
+        {showGenerate ? (
+          <button
+            type="button"
+            onClick={handleGenerateGtin}
+            disabled={pending}
+            className="shrink-0 rounded-md border border-border bg-muted px-2 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80 disabled:opacity-50"
+          >
+            Generate EAN-13
+          </button>
+        ) : null}
       </div>
       <p className="text-xs text-muted-foreground">
-        Retail packaging often needs a GS1-registered prefix. Generated codes are
-        valid EAN-13 for internal use.
+        Values are validated per symbology. Retail GTINs normally use a GS1
+        prefix; generated EAN-13s are for internal use.
       </p>
       <div>
         <label

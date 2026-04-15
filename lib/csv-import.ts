@@ -1,7 +1,12 @@
-import { resolveEan13FromInput } from "@/lib/gtin";
+import { DEFAULT_BARCODE_FORMAT_ID } from "@/lib/barcode-formats";
+import {
+  normalizeBarcodeFormatSlug,
+  validateBarcodePayload,
+} from "@/lib/barcode-validate";
 import { parsePriceToCents } from "@/lib/money";
 
 export type ParsedSkuRow = {
+  barcode_format: string;
   gtin: string;
   name: string;
   lot: string | null;
@@ -25,7 +30,8 @@ export function normalizeHeaders(row: Record<string, unknown>): Record<string, s
 }
 
 /**
- * Expected columns (case-insensitive): gtin, name, lot (optional), price (optional), logo_url (optional)
+ * Expected columns (case-insensitive): gtin (or equivalent), name, optional barcode_format,
+ * lot, price, logo_url
  */
 export function parseSkuFromCsvRow(
   raw: Record<string, unknown>,
@@ -33,24 +39,43 @@ export function parseSkuFromCsvRow(
 ): { ok: true; value: ParsedSkuRow } | { ok: false; error: RowParseError } {
   const row = normalizeHeaders(raw);
 
-  const gtinRaw =
-    row.gtin ?? row.ean ?? row.barcode ?? row.upc ?? "";
-  const name = row.name ?? row.product ?? row.title ?? "";
+  const formatRaw =
+    row.barcode_format ??
+    row.format ??
+    row.symbology ??
+    row.bcid ??
+    row.type ??
+    "";
+  const trimmedFormat = formatRaw.trim();
+  const formatSlug = trimmedFormat
+    ? normalizeBarcodeFormatSlug(formatRaw)
+    : DEFAULT_BARCODE_FORMAT_ID;
 
-  const resolved = resolveEan13FromInput(gtinRaw);
-  if (!resolved.ok) {
-    const msg =
-      resolved.reason === "empty"
-        ? "Missing gtin (or barcode/ean column)."
-        : resolved.reason === "bad_length"
-          ? "GTIN must be 12 or 13 digits (EAN-13)."
-          : "Wrong EAN-13 check digit (last digit); fix it or enter 12 digits and we add the check digit.";
+  if (trimmedFormat && !formatSlug) {
     return {
       ok: false,
-      error: { line, message: msg },
+      error: {
+        line,
+        message: `Unknown barcode_format “${trimmedFormat}”. Use an id from the template (e.g. ean13, qrcode).`,
+      },
     };
   }
-  const gtin = resolved.gtin;
+
+  const barcode_format: string = trimmedFormat ? formatSlug! : DEFAULT_BARCODE_FORMAT_ID;
+
+  const gtinRaw =
+    row.gtin ?? row.ean ?? row.barcode ?? row.upc ?? row.payload ?? row.data ?? "";
+  const name = row.name ?? row.product ?? row.title ?? "";
+
+  const validated = validateBarcodePayload(barcode_format, gtinRaw);
+  if (!validated.ok) {
+    return {
+      ok: false,
+      error: { line, message: validated.error },
+    };
+  }
+
+  const gtin = validated.value;
 
   const nameTrim = name.trim();
   if (!nameTrim) {
@@ -88,6 +113,7 @@ export function parseSkuFromCsvRow(
   return {
     ok: true,
     value: {
+      barcode_format,
       gtin,
       name: nameTrim,
       lot,

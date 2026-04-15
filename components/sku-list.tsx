@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_BARCODE_FORMAT_ID, getBarcodeFormatDef } from "@/lib/barcode-formats";
 import type { SkuRow } from "@/lib/types/sku";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
@@ -55,7 +56,9 @@ export function SkuList({ skus, selectedId, onSelect }: Props) {
                   {sku.name}
                 </span>
                 <span className="block truncate font-mono text-xs text-muted-foreground">
-                  {sku.gtin}
+                  {getBarcodeFormatDef(sku.barcode_format ?? DEFAULT_BARCODE_FORMAT_ID)?.label ?? sku.barcode_format}
+                  {": "}
+                  {sku.gtin.length > 48 ? `${sku.gtin.slice(0, 48)}…` : sku.gtin}
                 </span>
               </button>
             );

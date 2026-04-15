@@ -2,21 +2,27 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { generateEan13, resolveEan13FromInput } from "@/lib/gtin";
-
-function gtinFormError(reason: "empty" | "bad_length" | "bad_check"): string {
-  if (reason === "empty") return "Enter a GTIN.";
-  if (reason === "bad_length") {
-    return "Enter 12 or 13 digits (EAN-13).";
-  }
-  return "Invalid EAN-13 check digit; use 12 digits to auto-fill the check digit.";
-}
+import {
+  DEFAULT_BARCODE_FORMAT_ID,
+  isSupportedBarcodeFormatId,
+} from "@/lib/barcode-formats";
+import { validateBarcodePayload } from "@/lib/barcode-validate";
+import { generateEan13 } from "@/lib/gtin";
 
 function formatMoneyError(cents: number) {
   if (!Number.isInteger(cents) || cents < 0) {
     return "Price must be a non-negative integer (cents).";
   }
   return null;
+}
+
+function readFormat(formData: FormData): string | { error: string } {
+  const raw = String(formData.get("barcode_format") ?? "").trim();
+  const id = raw || DEFAULT_BARCODE_FORMAT_ID;
+  if (!isSupportedBarcodeFormatId(id)) {
+    return { error: "Invalid barcode type." };
+  }
+  return id;
 }
 
 export async function createSku(formData: FormData) {
@@ -26,12 +32,15 @@ export async function createSku(formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
-  const gtinRaw = String(formData.get("gtin") ?? "");
-  const resolved = resolveEan13FromInput(gtinRaw);
-  if (!resolved.ok) {
-    return { error: gtinFormError(resolved.reason) };
+  const formatRead = readFormat(formData);
+  if (typeof formatRead === "object") return formatRead;
+
+  const payloadRaw = String(formData.get("gtin") ?? "");
+  const validated = validateBarcodePayload(formatRead, payloadRaw);
+  if (!validated.ok) {
+    return { error: validated.error };
   }
-  const normalized = resolved.gtin;
+  const normalized = validated.value;
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Product name is required." };
@@ -47,6 +56,7 @@ export async function createSku(formData: FormData) {
     .from("skus")
     .insert({
       user_id: user.id,
+      barcode_format: formatRead,
       gtin: normalized,
       name,
       lot,
@@ -58,7 +68,7 @@ export async function createSku(formData: FormData) {
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "This GTIN already exists for your account." };
+      return { error: "This barcode value already exists for your account (same type)." };
     }
     return { error: error.message };
   }
@@ -78,12 +88,15 @@ export async function updateSku(id: string, formData: FormData) {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in." };
 
-  const gtinRaw = String(formData.get("gtin") ?? "");
-  const resolved = resolveEan13FromInput(gtinRaw);
-  if (!resolved.ok) {
-    return { error: gtinFormError(resolved.reason) };
+  const formatRead = readFormat(formData);
+  if (typeof formatRead === "object") return formatRead;
+
+  const payloadRaw = String(formData.get("gtin") ?? "");
+  const validated = validateBarcodePayload(formatRead, payloadRaw);
+  if (!validated.ok) {
+    return { error: validated.error };
   }
-  const normalized = resolved.gtin;
+  const normalized = validated.value;
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Product name is required." };
@@ -98,6 +111,7 @@ export async function updateSku(id: string, formData: FormData) {
   const { error } = await supabase
     .from("skus")
     .update({
+      barcode_format: formatRead,
       gtin: normalized,
       name,
       lot,
@@ -109,7 +123,7 @@ export async function updateSku(id: string, formData: FormData) {
 
   if (error) {
     if (error.code === "23505") {
-      return { error: "This GTIN already exists for your account." };
+      return { error: "This barcode value already exists for your account (same type)." };
     }
     return { error: error.message };
   }
@@ -137,6 +151,7 @@ export async function deleteSku(id: string) {
   return { ok: true as const };
 }
 
+/** Only for EAN-13 auto-value in the form. */
 export async function generateNextGtin() {
   const supabase = await createClient();
   const {
@@ -151,6 +166,7 @@ export async function generateNextGtin() {
       .select("id")
       .eq("user_id", user.id)
       .eq("gtin", candidate)
+      .eq("barcode_format", "ean13")
       .maybeSingle();
 
     if (!data) {

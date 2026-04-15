@@ -71,7 +71,9 @@ export function ImportPanel({ imports }: Props) {
           CSV / Excel import
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
-          Columns: <span className="font-mono text-foreground">gtin</span>,{" "}
+          Columns: optional <span className="font-mono">barcode_format</span>{" "}
+          (default <span className="font-mono">ean13</span>),{" "}
+          <span className="font-mono text-foreground">gtin</span> (barcode data),{" "}
           <span className="font-mono text-foreground">name</span>, optional{" "}
           <span className="font-mono">lot</span>,{" "}
           <span className="font-mono">price</span>,{" "}

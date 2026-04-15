@@ -54,3 +54,81 @@ export function generateEan13(): string {
   }
   return digits12 + computeEan13CheckDigit(digits12);
 }
+
+/** EAN-8 check digit for first 7 digits (GS1 mod-10). */
+export function computeEan8CheckDigit(digits7: string): string {
+  if (!/^\d{7}$/.test(digits7)) {
+    throw new Error("EAN-8 requires exactly 7 digits before the check digit");
+  }
+  let sum = 0;
+  for (let i = 0; i < 7; i++) {
+    const n = Number(digits7[i]);
+    sum += i % 2 === 0 ? n * 3 : n;
+  }
+  return String((10 - (sum % 10)) % 10);
+}
+
+export function isValidEan8(gtin: string): boolean {
+  if (!/^\d{8}$/.test(gtin)) return false;
+  try {
+    return computeEan8CheckDigit(gtin.slice(0, 7)) === gtin[7];
+  } catch {
+    return false;
+  }
+}
+
+export type ResolveEan8Failure = "empty" | "bad_length" | "bad_check";
+
+export function resolveEan8FromInput(input: string):
+  | { ok: true; value: string }
+  | { ok: false; reason: ResolveEan8Failure } {
+  const d = normalizeGtin(input);
+  if (d.length === 0) return { ok: false, reason: "empty" };
+  if (d.length === 7) {
+    return { ok: true, value: d + computeEan8CheckDigit(d) };
+  }
+  if (d.length === 8) {
+    if (isValidEan8(d)) return { ok: true, value: d };
+    return { ok: false, reason: "bad_check" };
+  }
+  return { ok: false, reason: "bad_length" };
+}
+
+/** UPC-A check digit for first 11 digits (GTIN-12 / UPC-A). */
+export function computeUpcACheckDigit(digits11: string): string {
+  if (!/^\d{11}$/.test(digits11)) {
+    throw new Error("UPC-A requires exactly 11 digits before the check digit");
+  }
+  let sum = 0;
+  for (let i = 0; i < 11; i++) {
+    const n = Number(digits11[i]);
+    sum += i % 2 === 0 ? n * 3 : n;
+  }
+  return String((10 - (sum % 10)) % 10);
+}
+
+export function isValidUpcA(upc: string): boolean {
+  if (!/^\d{12}$/.test(upc)) return false;
+  try {
+    return computeUpcACheckDigit(upc.slice(0, 11)) === upc[11];
+  } catch {
+    return false;
+  }
+}
+
+export type ResolveUpcAFailure = "empty" | "bad_length" | "bad_check";
+
+export function resolveUpcAFromInput(input: string):
+  | { ok: true; value: string }
+  | { ok: false; reason: ResolveUpcAFailure } {
+  const d = normalizeGtin(input);
+  if (d.length === 0) return { ok: false, reason: "empty" };
+  if (d.length === 11) {
+    return { ok: true, value: d + computeUpcACheckDigit(d) };
+  }
+  if (d.length === 12) {
+    if (isValidUpcA(d)) return { ok: true, value: d };
+    return { ok: false, reason: "bad_check" };
+  }
+  return { ok: false, reason: "bad_length" };
+}

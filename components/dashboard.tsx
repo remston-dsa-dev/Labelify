@@ -43,7 +43,7 @@ export function Dashboard({
             Labelify
           </h1>
           <p className="text-xs text-muted-foreground">
-            SKUs and EAN-13 labels
+            SKUs and barcode labels
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">

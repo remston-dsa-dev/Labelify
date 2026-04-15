@@ -89,14 +89,19 @@ export async function POST(request: Request) {
     }
   }
 
-  const seenGtin = new Set<string>();
+  const rowKey = (r: ParsedSkuRow) => `${r.barcode_format}\t${r.gtin}`;
+  const seen = new Set<string>();
   const deduped: ParsedSkuRow[] = [];
   for (const { line, value } of staged) {
-    if (seenGtin.has(value.gtin)) {
-      rowErrors.push({ line, message: `Duplicate GTIN in file: ${value.gtin}` });
+    const key = rowKey(value);
+    if (seen.has(key)) {
+      rowErrors.push({
+        line,
+        message: `Duplicate barcode in file (${value.barcode_format}): ${value.gtin.slice(0, 64)}${value.gtin.length > 64 ? "…" : ""}`,
+      });
       continue;
     }
-    seenGtin.add(value.gtin);
+    seen.add(key);
     deduped.push(value);
   }
 
@@ -112,28 +117,29 @@ export async function POST(request: Request) {
     );
   }
 
+  const uniqueGtins = [...new Set(deduped.map((r) => r.gtin))];
   const { data: existingRows } = await supabase
     .from("skus")
-    .select("gtin")
+    .select("gtin, barcode_format")
     .eq("user_id", user.id)
-    .in(
-      "gtin",
-      deduped.map((r) => r.gtin),
-    );
+    .in("gtin", uniqueGtins);
 
-  const existingSet = new Set((existingRows ?? []).map((r) => r.gtin));
+  const existingSet = new Set(
+    (existingRows ?? []).map((r) => `${r.barcode_format}\t${r.gtin}`),
+  );
 
-  const gtinLine = new Map<string, number>();
+  const firstLineByKey = new Map<string, number>();
   for (const { line, value } of staged) {
-    if (!gtinLine.has(value.gtin)) gtinLine.set(value.gtin, line);
+    const k = rowKey(value);
+    if (!firstLineByKey.has(k)) firstLineByKey.set(k, line);
   }
 
   const toInsert: ParsedSkuRow[] = [];
   for (const value of deduped) {
-    if (existingSet.has(value.gtin)) {
+    if (existingSet.has(rowKey(value))) {
       rowErrors.push({
-        line: gtinLine.get(value.gtin) ?? 0,
-        message: `GTIN already in account: ${value.gtin}`,
+        line: firstLineByKey.get(rowKey(value)) ?? 0,
+        message: `Barcode already in account (${value.barcode_format}): ${value.gtin.slice(0, 48)}${value.gtin.length > 48 ? "…" : ""}`,
       });
       continue;
     }
@@ -190,6 +196,7 @@ export async function POST(request: Request) {
     const payload = toInsert.map((r) => ({
       user_id: user.id,
       import_id: importRow.id,
+      barcode_format: r.barcode_format,
       gtin: r.gtin,
       name: r.name,
       lot: r.lot,

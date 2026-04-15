@@ -2,7 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { generateEan13, isValidEan13, normalizeGtin } from "@/lib/gtin";
+import { generateEan13, resolveEan13FromInput } from "@/lib/gtin";
+
+function gtinFormError(reason: "empty" | "bad_length" | "bad_check"): string {
+  if (reason === "empty") return "Enter a GTIN.";
+  if (reason === "bad_length") {
+    return "Enter 12 or 13 digits (EAN-13).";
+  }
+  return "Invalid EAN-13 check digit; use 12 digits to auto-fill the check digit.";
+}
 
 function formatMoneyError(cents: number) {
   if (!Number.isInteger(cents) || cents < 0) {
@@ -19,10 +27,11 @@ export async function createSku(formData: FormData) {
   if (!user) return { error: "Not signed in." };
 
   const gtinRaw = String(formData.get("gtin") ?? "");
-  const normalized = normalizeGtin(gtinRaw);
-  if (!isValidEan13(normalized)) {
-    return { error: "Enter a valid EAN-13 (13 digits with correct check digit)." };
+  const resolved = resolveEan13FromInput(gtinRaw);
+  if (!resolved.ok) {
+    return { error: gtinFormError(resolved.reason) };
   }
+  const normalized = resolved.gtin;
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Product name is required." };
@@ -70,10 +79,11 @@ export async function updateSku(id: string, formData: FormData) {
   if (!user) return { error: "Not signed in." };
 
   const gtinRaw = String(formData.get("gtin") ?? "");
-  const normalized = normalizeGtin(gtinRaw);
-  if (!isValidEan13(normalized)) {
-    return { error: "Enter a valid EAN-13 (13 digits with correct check digit)." };
+  const resolved = resolveEan13FromInput(gtinRaw);
+  if (!resolved.ok) {
+    return { error: gtinFormError(resolved.reason) };
   }
+  const normalized = resolved.gtin;
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Product name is required." };

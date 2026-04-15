@@ -25,6 +25,27 @@ export function isValidEan13(gtin: string): boolean {
   }
 }
 
+export type ResolveEan13Failure = "empty" | "bad_length" | "bad_check";
+
+/**
+ * For forms and CSV: 12 digits → append EAN-13 check digit; 13 digits → must validate.
+ * Many spreadsheets omit the check digit or use a wrong 13th digit.
+ */
+export function resolveEan13FromInput(input: string):
+  | { ok: true; gtin: string }
+  | { ok: false; reason: ResolveEan13Failure } {
+  const d = normalizeGtin(input);
+  if (d.length === 0) return { ok: false, reason: "empty" };
+  if (d.length === 12) {
+    return { ok: true, gtin: d + computeEan13CheckDigit(d) };
+  }
+  if (d.length === 13) {
+    if (isValidEan13(d)) return { ok: true, gtin: d };
+    return { ok: false, reason: "bad_check" };
+  }
+  return { ok: false, reason: "bad_length" };
+}
+
 /** Random valid EAN-13 (internal use; retail may require GS1 prefix). */
 export function generateEan13(): string {
   let digits12 = "";

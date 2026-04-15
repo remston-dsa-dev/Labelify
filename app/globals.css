@@ -50,10 +50,22 @@ body {
     display: none !important;
   }
 
+  html {
+    height: auto !important;
+  }
+
   body {
     background: white !important;
     color: black !important;
     overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* App route shell uses overflow-y-auto for screen; must not clip print output. */
+  .app-shell {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .label-print-area {
@@ -61,5 +73,10 @@ body {
     box-shadow: none !important;
     border: 1px solid #ccc !important;
     print-color-adjust: exact;
+  }
+
+  .batch-label-page {
+    break-after: page;
+    page-break-after: always;
   }
 }

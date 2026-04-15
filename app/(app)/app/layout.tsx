@@ -4,7 +4,7 @@ export default function AppSectionLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="h-dvh min-h-0 overflow-hidden bg-background">
+    <div className="app-shell min-h-dvh overflow-x-hidden overflow-y-auto bg-background">
       {children}
     </div>
   );

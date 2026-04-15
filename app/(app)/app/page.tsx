@@ -1,6 +1,6 @@
 import { Dashboard } from "@/components/dashboard";
 import { createClient } from "@/lib/supabase/server";
-import type { SkuRow } from "@/lib/types/sku";
+import type { SkuImportRow, SkuRow } from "@/lib/types/sku";
 
 export default async function AppPage() {
   const supabase = await createClient();
@@ -8,6 +8,12 @@ export default async function AppPage() {
     .from("skus")
     .select("*")
     .order("created_at", { ascending: false });
+
+  const importsResult = await supabase
+    .from("sku_imports")
+    .select("*")
+    .order("created_at", { ascending: false });
+  const imports = importsResult.error ? [] : (importsResult.data ?? []);
 
   if (error) {
     return (
@@ -19,5 +25,10 @@ export default async function AppPage() {
     );
   }
 
-  return <Dashboard initialSkus={(skus ?? []) as SkuRow[]} />;
+  return (
+    <Dashboard
+      initialSkus={(skus ?? []) as SkuRow[]}
+      initialImports={(imports ?? []) as SkuImportRow[]}
+    />
+  );
 }

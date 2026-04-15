@@ -1,0 +1,36 @@
+{
+  "name": "labelify",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "supabase": "supabase",
+    "db:login": "supabase login",
+    "db:link": "supabase link",
+    "db:push": "supabase db push"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.2",
+    "@tanstack/react-virtual": "^3.13.23",
+    "jsbarcode": "^3.12.3",
+    "next": "16.2.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/jsbarcode": "^3.11.4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.3",
+    "supabase": "^2.91.2",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

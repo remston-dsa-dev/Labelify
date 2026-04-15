@@ -1,0 +1,1 @@
+-- Optional seed data (none required for Labelify).
